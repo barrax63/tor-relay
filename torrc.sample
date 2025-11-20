@@ -22,11 +22,13 @@ Log notice stdout
 
 # ORPort - Onion Router Port for incoming Tor connections
 # This is the main port for relay traffic
-ORPort 9001
+ORPort 0.0.0.0:9001
+# optional: set fixed IPv6 address to avoid mismatches
+ORPort [<IPv6 address>]:9001
 
 # Directory Port - Serve directory information to other Tor clients
 # Helps distribute network information
-DirPort 9030
+DirPort 0.0.0.0:9030
 
 # Relay nickname - must be unique and alphanumeric
 Nickname tor-relay

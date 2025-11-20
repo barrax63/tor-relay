@@ -45,6 +45,18 @@ sudo ufw reload
 
 For other firewalls, ensure the ports specified in your `torrc` are open.
 
+### 1. Configure IPv6 interface
+
+Add the correct static IPv6 interface address (`<your IPv6 address>`) to the used interface (`<your interface>`).
+
+```bash
+sudo vi /etc/dhcpcd.conf
+
+interface <your interface>
+ipv6ra_noprivacy
+static ip6_address=<your IPv6 address>
+```
+
 ### 2. Build and Start
 
 ```bash
