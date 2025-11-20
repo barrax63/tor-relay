@@ -1,0 +1,96 @@
+###############################################################################
+## Basic Relay Settings
+###############################################################################
+
+# Run Tor only as a relay server (no local SOCKS proxy)
+SocksPort 0
+ControlSocket 0
+
+# Data directory for storing relay keys and state
+DataDirectory /var/lib/tor
+
+###############################################################################
+## Logging Configuration
+###############################################################################
+
+# Log to stdout (useful for Docker logs)
+# Uncomment this and comment out the file logging above if preferred
+Log notice stdout
+
+###############################################################################
+## Control Port Configuration
+###############################################################################
+
+# Control port for monitoring and management
+# When using host network mode, bind to localhost only for security
+# When using bridge mode, bind to 0.0.0.0 (Docker handles external access)
+ControlPort 9051
+
+# Cookie-based authentication (recommended)
+CookieAuthentication 1
+
+###############################################################################
+## Relay Configuration
+###############################################################################
+
+# ORPort - Onion Router Port for incoming Tor connections
+# This is the main port for relay traffic
+ORPort 9001
+
+# Directory Port - Serve directory information to other Tor clients
+# Helps distribute network information
+DirPort 9030
+
+# Relay nickname - must be unique and alphanumeric
+Nickname cryShell01
+
+# Contact information - allows Tor Project to contact you about issues
+# Format: [PGP Key] Name <email>
+ContactInfo 88EACE21E04C30749711DBFF2CF89265F691B280 cryShell <kx@cryshell.com>
+
+###############################################################################
+## Bandwidth Configuration
+###############################################################################
+
+# Bandwidth limits for relay traffic
+# Your own traffic through Tor (if any) is not counted against these limits
+# Units: KB, MB, GB (binary prefixes: 1 MB = 1024 KB)
+
+# Sustained bandwidth rate
+RelayBandwidthRate 5 MB
+
+# Burst bandwidth (short-term maximum)
+RelayBandwidthBurst 8 MB
+
+MaxMemInQueues 2 GB
+
+# Optional: Accounting limits to cap total monthly bandwidth
+# Useful if you have bandwidth caps from your ISP
+# Note: This applies separately to sent and received bytes
+#AccountingMax 50 GB
+#AccountingStart day 00:00
+# Or start on specific day of month:
+#AccountingStart month 3 15:00
+
+###############################################################################
+## Relay Family Configuration
+###############################################################################
+
+# MyFamily - Declare other relays you operate
+# This prevents Tor clients from using multiple relays from the same
+# operator in a single circuit, improving anonymity
+# List all relay fingerprints you control (comma-separated)
+MyFamily CD1D703E667366A5474E4FF6B1BE6D0C9178B2B0,09587B9DE31CAAE07CDCDDB203D3D0153FE02D73
+
+###############################################################################
+## Exit Policy Configuration
+###############################################################################
+
+# ExitRelay 0 - This relay will NOT be used as an exit node
+# This is a middle/guard relay only, which is safer to operate
+# Exit relays can receive abuse complaints and legal notices
+ExitRelay 0
+
+# Explicit exit policy (redundant with ExitRelay 0, but good practice)
+ExitPolicy reject *:*
+ExitPolicy reject6 *:*

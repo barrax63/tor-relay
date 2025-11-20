@@ -1,0 +1,4 @@
+# Key files & identity
+tor-data/keys/
+tor-data/fingerprint
+tor-data/state

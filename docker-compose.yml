@@ -1,0 +1,46 @@
+x-logging: &default-logging
+  driver: "json-file"
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+x-security-baseline: &security-baseline
+  security_opt:
+    - no-new-privileges:true
+    - apparmor=docker-default
+  cap_drop:
+    - ALL
+
+services:
+  tor:
+    <<: *security-baseline
+    build:
+      context: .
+      dockerfile: Dockerfile
+    init: true
+    network_mode: host
+    restart: unless-stopped
+    environment:
+      - TZ=Europe/Berlin
+    volumes:
+      # Mount torrc configuration as read-only
+      # This prevents the container from modifying the config
+      - ./torrc:/etc/tor/torrc:ro
+      # Mount Tor data directory for persistent storage
+      # This stores keys, fingerprints, and state information
+      - ./tor-data:/var/lib/tor:rw
+    cap_add:
+      - CHOWN
+      - FOWNER
+      - SETGID
+      - SETUID
+      - DAC_OVERRIDE
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    logging: *default-logging
