@@ -129,9 +129,9 @@ Or check the container logs - the fingerprint is displayed on startup.
 ### Update Tor
 
 ```bash
-docker-compose down
-docker-compose build --no-cache
-docker-compose up -d
+docker compose down
+docker compose build --no-cache
+docker compose up -d
 ```
 
 The `deb.torproject.org-keyring` package ensures the GPG keys stay up-to-date automatically.
