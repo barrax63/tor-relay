@@ -21,6 +21,7 @@ This Docker setup provides a production-ready Tor relay/bridge container based o
 .
 ├── Dockerfile             # Container build instructions
 ├── docker-compose.yml     # Service orchestration
+├── torrc.sample           # Tor configuration sample file
 ├── torrc                  # Tor configuration file (create this)
 ├── tor-data/              # Persistent data directory (auto-created)
 │   ├── keys/              # Relay identity keys
@@ -51,6 +52,7 @@ For other firewalls, ensure the ports specified in your `torrc` are open.
 docker compose build
 
 # 2. Create configuration
+cp torrc.sample torrc
 nano torrc  # Edit with your settings (Nickname, ContactInfo, etc.)
 
 # 3. Run setup script

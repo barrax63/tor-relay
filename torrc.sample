@@ -29,11 +29,11 @@ ORPort 9001
 DirPort 9030
 
 # Relay nickname - must be unique and alphanumeric
-Nickname cryShell01
+Nickname tor-relay
 
 # Contact information - allows Tor Project to contact you about issues
 # Format: [PGP Key] Name <email>
-ContactInfo 88EACE21E04C30749711DBFF2CF89265F691B280 cryShell <kx@cryshell.com>
+ContactInfo tor-relay <tor@example.com>
 
 ###############################################################################
 ## Bandwidth Configuration
@@ -68,7 +68,7 @@ MaxMemInQueues 1 GB
 # This prevents Tor clients from using multiple relays from the same
 # operator in a single circuit, improving anonymity
 # List all relay fingerprints you control (comma-separated)
-MyFamily CD1D703E667366A5474E4FF6B1BE6D0C9178B2B0,09587B9DE31CAAE07CDCDDB203D3D0153FE02D73
+# MyFamily CD1D....
 
 ###############################################################################
 ## Exit Policy Configuration
