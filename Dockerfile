@@ -54,17 +54,12 @@ RUN mkdir -p /var/lib/tor && \
 RUN mkdir -p /etc/tor && \
     chown -R ${TOR_USER}:${TOR_USER} /etc/tor
 
-# Health check to ensure Tor is running properly
-# Checks if the Tor process is running
-HEALTHCHECK --interval=60s --timeout=10s --start-period=30s --retries=3 \
-    CMD pgrep -x tor > /dev/null || exit 1
-
 # Switch to non-root user for security
 USER ${TOR_USER}
 
 # Expose common Tor ports (can be overridden in docker-compose.yml)
-# ORPort (relay traffic), DirPort (directory information), ControlPort
-EXPOSE 9001 9030 9051
+# ORPort (relay traffic), DirPort (directory information)
+EXPOSE 9001 9030
 
 # Set working directory
 WORKDIR /var/lib/tor

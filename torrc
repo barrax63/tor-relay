@@ -14,20 +14,7 @@ DataDirectory /var/lib/tor
 ###############################################################################
 
 # Log to stdout (useful for Docker logs)
-# Uncomment this and comment out the file logging above if preferred
 Log notice stdout
-
-###############################################################################
-## Control Port Configuration
-###############################################################################
-
-# Control port for monitoring and management
-# When using host network mode, bind to localhost only for security
-# When using bridge mode, bind to 0.0.0.0 (Docker handles external access)
-ControlPort 9051
-
-# Cookie-based authentication (recommended)
-CookieAuthentication 1
 
 ###############################################################################
 ## Relay Configuration
@@ -62,7 +49,8 @@ RelayBandwidthRate 5 MB
 # Burst bandwidth (short-term maximum)
 RelayBandwidthBurst 8 MB
 
-MaxMemInQueues 2 GB
+# Upper bound for how much memory Tor is willing to allocate
+MaxMemInQueues 1 GB
 
 # Optional: Accounting limits to cap total monthly bandwidth
 # Useful if you have bandwidth caps from your ISP
@@ -94,3 +82,9 @@ ExitRelay 0
 # Explicit exit policy (redundant with ExitRelay 0, but good practice)
 ExitPolicy reject *:*
 ExitPolicy reject6 *:*
+
+###############################################################################
+## Metrics Configuration (for healthcheck)
+###############################################################################
+MetricsPort 127.0.0.1:9120
+MetricsPortPolicy accept 127.0.0.1

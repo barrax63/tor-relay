@@ -1,4 +1,4 @@
-# Production Tor Docker Container
+# Tor Relay Docker Container
 
 This Docker setup provides a production-ready Tor relay/bridge container based on Debian Bookworm, following the official Tor Project installation guidelines.
 
@@ -7,66 +7,34 @@ This Docker setup provides a production-ready Tor relay/bridge container based o
 - **Official Tor Repository**: Uses the official Tor Project repository with GPG signature verification
 - **Debian Bookworm Slim**: Minimal base image for reduced attack surface
 - **Persistent Storage**: Keys and fingerprints stored in volumes for relay migration
-- **Security Hardened**: No-new-privileges, AppArmor, dropped capabilities, read-only root filesystem
+- **Security Hardened**: No-new-privileges, AppArmor, dropped capabilities
 - **Host Network Mode**: Direct host network access for optimal performance
 - **Structured Logging**: JSON logging with rotation (10MB max, 5 files)
 - **Health Checks**: Automatic monitoring of Tor process
 - **Resource Limits**: Configurable CPU and memory constraints
+- **Automatic Permission Checks**: Smart entrypoint validates permissions and configuration on every start
+- **Helpful Error Messages**: Clear guidance when issues are detected
 
 ## Directory Structure
 
 ```
 .
-├── Dockerfile              # Container build instructions
-├── docker-compose.yml      # Service orchestration
-├── torrc                   # Tor configuration file (create this)
+├── Dockerfile             # Container build instructions
+├── docker-compose.yml     # Service orchestration
+├── torrc                  # Tor configuration file (create this)
 ├── tor-data/              # Persistent data directory (auto-created)
 │   ├── keys/              # Relay identity keys
 │   ├── fingerprint        # Relay fingerprint
 │   └── state              # Tor state information
+├── setup.sh               # Automated setup script
 └── README.md              # This file
 ```
 
-## Prerequisites
-
-- Docker Engine 20.10+
-- Docker Compose 1.29+
-- Sufficient bandwidth for running a Tor relay
-- Open firewall ports (9001, 9030 by default)
-
 ## Setup Instructions
 
-### 1. Create Configuration File
+### 1. Configure Firewall
 
-Create a `torrc` file in the project directory:
-
-```bash
-cp torrc.sample torrc
-nano torrc
-```
-
-Edit the configuration according to your needs. **Important settings to change:**
-- `Nickname`: Your relay's name
-- `ContactInfo`: Your contact email
-- `RelayBandwidthRate`: Your bandwidth commitment
-- `ORPort` and `DirPort`: Ensure these match your firewall rules
-
-### 2. Create Data Directory
-
-```bash
-mkdir -p tor-data
-chmod 700 tor-data
-```
-
-**Note**: The container runs as the `debian-tor` user (UID 114 typically). You may need to adjust ownership:
-
-```bash
-sudo chown -R 114:114 tor-data
-```
-
-### 3. Configure Firewall
-
-If using UFW (as mentioned in the installation PDF):
+If using UFW:
 
 ```bash
 sudo ufw allow 9001/tcp  # ORPort
@@ -76,17 +44,24 @@ sudo ufw reload
 
 For other firewalls, ensure the ports specified in your `torrc` are open.
 
-### 4. Build and Start
+### 2. Build and Start
 
 ```bash
-# Build the container
-docker-compose build
+# 3. Build the image
+docker compose build
 
-# Start in detached mode
-docker-compose up -d
+# 2. Create configuration
+nano torrc  # Edit with your settings (Nickname, ContactInfo, etc.)
 
-# View logs
-docker-compose logs -f tor
+# 3. Run setup script
+chmod +x setup.sh
+./setup.sh
+
+# 4. Start the container
+docker compose up -d
+
+# 4. Monitor logs and automatic checks
+docker compose logs -f tor
 ```
 
 ## Migrating an Existing Relay
@@ -101,7 +76,10 @@ To migrate an existing Tor relay to this container:
 2. **Copy your existing Tor data**:
    ```bash
    sudo cp -r /var/lib/tor/* ./tor-data/
-   sudo chown -R 114:114 tor-data
+   sudo chown -R 100:100 tor-data
+   sudo chmod 700 tor-data
+   sudo find ./tor-data -type f -exec chmod 600 {} \;
+   sudo find ./tor-data -type d -exec chmod 700 {} \;
    ```
 
 3. **Copy your torrc configuration**:
@@ -111,7 +89,8 @@ To migrate an existing Tor relay to this container:
 
 4. **Start the container**:
    ```bash
-   docker-compose up -d
+   docker compose build
+   docker compose up -d
    ```
 
 Your relay will maintain its identity and reputation in the Tor network.
@@ -120,27 +99,35 @@ Your relay will maintain its identity and reputation in the Tor network.
 
 ### View Logs
 ```bash
-docker-compose logs -f tor
+docker compose logs -f tor
 ```
 
 ### Check Container Status
 ```bash
-docker-compose ps
+docker compose ps
 ```
 
 ### Check Relay Status
 After your relay has been running for a few hours, check its status:
-- Relay Search: https://metrics.torproject.org/rs.html
+- **Relay Search**: https://metrics.torproject.org/rs.html
 - Search by nickname or fingerprint (found in `tor-data/fingerprint`)
 
 ### Resource Usage
 ```bash
-docker stats tor-relay
+docker stats tor
 ```
+
+### View Relay Fingerprint
+```bash
+cat tor-data/fingerprint
+```
+
+Or check the container logs - the fingerprint is displayed on startup.
 
 ## Maintenance
 
 ### Update Tor
+
 ```bash
 docker-compose down
 docker-compose build --no-cache
@@ -150,82 +137,37 @@ docker-compose up -d
 The `deb.torproject.org-keyring` package ensures the GPG keys stay up-to-date automatically.
 
 ### Backup Relay Identity
-```bash
-tar -czf tor-backup-$(date +%Y%m%d).tar.gz tor-data/
-```
 
-### Restart Container
+**Important**: Your relay's identity is stored in `tor-data/`. Back it up regularly!
+
 ```bash
-docker-compose restart tor
+# Create a timestamped backup
+tar -czf tor-backup-$(date +%Y%m%d).tar.gz tor-data/
+
+# Verify the backup
+tar -tzf tor-backup-$(date +%Y%m%d).tar.gz
 ```
 
 ## Security Considerations
 
-1. **Read-only Root Filesystem**: The container's root filesystem is read-only, preventing unauthorized modifications
-2. **Dropped Capabilities**: All Linux capabilities are dropped for minimal privilege
-3. **AppArmor**: Default Docker AppArmor profile is enforced
-4. **No New Privileges**: Prevents privilege escalation
-5. **Resource Limits**: CPU and memory limits prevent resource exhaustion
-6. **Non-root User**: Container runs as `debian-tor` user
-
-## Troubleshooting
-
-### Permission Errors
-If you see permission errors for `/var/lib/tor`:
-```bash
-sudo chown -R 114:114 tor-data
-chmod 700 tor-data
-```
-
-### Port Binding Errors
-Ensure no other service is using the Tor ports:
-```bash
-sudo netstat -tulpn | grep -E ':(9001|9030|9051)'
-```
-
-### Configuration Errors
-Validate your torrc before starting:
-```bash
-docker-compose run --rm tor --verify-config -f /etc/tor/torrc
-```
-
-### Container Won't Start
-Check logs for details:
-```bash
-docker-compose logs tor
-```
-
-## Performance Tuning
-
-For high-bandwidth relays, adjust in `docker-compose.yml`:
-
-```yaml
-deploy:
-  resources:
-    limits:
-      memory: 4G
-      cpus: '4.0'
-```
-
-And in your `torrc`:
-```
-RelayBandwidthRate 50 MBytes
-RelayBandwidthBurst 100 MBytes
-```
+1. **Dropped Capabilities**: All Linux capabilities are dropped for minimal privilege
+2. **AppArmor**: Default Docker AppArmor profile is enforced
+3. **No New Privileges**: Prevents privilege escalation
+4. **Resource Limits**: CPU and memory limits prevent resource exhaustion
+5. **Non-root User**: Container runs as `debian-tor` user (UID 100)
+6. **Read-only Configuration**: torrc is mounted read-only to prevent tampering
+7. **Secure Permissions**: Data directory uses 700 permissions (owner-only access)
+8. **Automatic Validation**: Configuration is validated before Tor starts
 
 ## References
 
-- Official Tor Project: https://www.torproject.org/
-- Tor Relay Guide: https://community.torproject.org/relay/
-- Debian Repository: https://deb.torproject.org/
-- Metrics Portal: https://metrics.torproject.org/
+- **Official Tor Project**: https://www.torproject.org/
+- **Tor Relay Guide**: https://community.torproject.org/relay/
+- **Debian Repository**: https://deb.torproject.org/
+- **Metrics Portal**: https://metrics.torproject.org/
+- **Relay Requirements**: https://community.torproject.org/relay/relays-requirements/
+- **Tor Manual**: https://2019.www.torproject.org/docs/tor-manual.html.en
 
 ## License
 
-This Docker configuration is provided as-is for running Tor relays. Tor itself is licensed under the 3-clause BSD license.
-
-## Support
-
-For Tor-specific questions, consult:
-- Tor Project Documentation: https://support.torproject.org/
-- Tor Relay Mailing List: tor-relays@lists.torproject.org
+This project is licensed under the Apache License 2.0 - see the LICENSE file for details.
