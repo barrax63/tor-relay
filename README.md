@@ -57,7 +57,14 @@ ipv6ra_noprivacy
 static ip6_address=<your IPv6 address>
 ```
 
-### 2. Build and Start
+### 2. Clone the repository
+
+```bash
+git clone https://github.com/barrax63/tor-relay.git
+cd tor-relay
+```
+
+### 3. Build and Start
 
 ```bash
 # 3. Build the image
