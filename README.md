@@ -12,7 +12,6 @@ This Docker setup provides a production-ready Tor relay/bridge container based o
 - **Structured Logging**: JSON logging with rotation (10MB max, 5 files)
 - **Health Checks**: Automatic monitoring of Tor process
 - **Resource Limits**: Configurable CPU and memory constraints
-- **Automatic Permission Checks**: Smart entrypoint validates permissions and configuration on every start
 - **Helpful Error Messages**: Clear guidance when issues are detected
 
 ## Directory Structure
@@ -23,10 +22,6 @@ This Docker setup provides a production-ready Tor relay/bridge container based o
 ├── docker-compose.yml     # Service orchestration
 ├── torrc.sample           # Tor configuration sample file
 ├── torrc                  # Tor configuration file (create this)
-├── tor-data/              # Persistent data directory (auto-created)
-│   ├── keys/              # Relay identity keys
-│   ├── fingerprint        # Relay fingerprint
-│   └── state              # Tor state information
 ├── setup.sh               # Automated setup script
 └── README.md              # This file
 ```
@@ -74,47 +69,12 @@ docker compose build
 cp torrc.sample torrc
 nano torrc  # Edit with your settings (Nickname, ContactInfo, etc.)
 
-# 3. Run setup script
-chmod +x setup.sh
-./setup.sh
-
-# 4. Start the container
+# 3. Start the container
 docker compose up -d
 
 # 4. Monitor logs and automatic checks
 docker compose logs -f tor
 ```
-
-## Migrating an Existing Relay
-
-To migrate an existing Tor relay to this container:
-
-1. **Stop your existing Tor service**:
-   ```bash
-   sudo systemctl stop tor
-   ```
-
-2. **Copy your existing Tor data**:
-   ```bash
-   sudo cp -r /var/lib/tor/* ./tor-data/
-   sudo chown -R 100:100 tor-data
-   sudo chmod 700 tor-data
-   sudo find ./tor-data -type f -exec chmod 600 {} \;
-   sudo find ./tor-data -type d -exec chmod 700 {} \;
-   ```
-
-3. **Copy your torrc configuration**:
-   ```bash
-   sudo cp /etc/tor/torrc ./torrc
-   ```
-
-4. **Start the container**:
-   ```bash
-   docker compose build
-   docker compose up -d
-   ```
-
-Your relay will maintain its identity and reputation in the Tor network.
 
 ## Monitoring
 
@@ -138,13 +98,6 @@ After your relay has been running for a few hours, check its status:
 docker stats tor
 ```
 
-### View Relay Fingerprint
-```bash
-cat tor-data/fingerprint
-```
-
-Or check the container logs - the fingerprint is displayed on startup.
-
 ## Maintenance
 
 ### Update Tor
@@ -156,18 +109,6 @@ docker compose up -d
 ```
 
 The `deb.torproject.org-keyring` package ensures the GPG keys stay up-to-date automatically.
-
-### Backup Relay Identity
-
-**Important**: Your relay's identity is stored in `tor-data/`. Back it up regularly!
-
-```bash
-# Create a timestamped backup
-tar -czf tor-backup-$(date +%Y%m%d).tar.gz tor-data/
-
-# Verify the backup
-tar -tzf tor-backup-$(date +%Y%m%d).tar.gz
-```
 
 ## Security Considerations
 

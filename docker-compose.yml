@@ -1,3 +1,6 @@
+volumes:
+  tor_storage:
+
 x-logging: &default-logging
   driver: "json-file"
   options:
@@ -26,9 +29,8 @@ services:
       # Mount torrc configuration as read-only
       # This prevents the container from modifying the config
       - ./torrc:/etc/tor/torrc:ro
-      # Mount Tor data directory for persistent storage
       # This stores keys, fingerprints, and state information
-      - ./tor-data:/var/lib/tor:rw
+      - tor_storage:/var/lib/tor
     cap_add:
       - CHOWN
       - FOWNER
