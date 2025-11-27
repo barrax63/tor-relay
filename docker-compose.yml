@@ -20,6 +20,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    image: barrax63/tor-relay:latest
     init: true
     network_mode: host
     restart: unless-stopped
@@ -37,12 +38,6 @@ services:
       - SETGID
       - SETUID
       - DAC_OVERRIDE
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://127.0.0.1:9120/metrics"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 30s
     deploy:
       resources:
         limits:

@@ -1,70 +1,68 @@
-# Production-ready Tor Docker Container
-# Based on Debian Bookworm installation instructions
+# =============================================================================
+# Tor Relay/Bridge - Privacy Network Node
+# =============================================================================
+# Production-ready Tor relay based on official Tor Project packages
+# =============================================================================
+
 FROM debian:bookworm-slim
 
-# Metadata labels
-LABEL maintainer="Tor Node Operator"
-LABEL description="Production Tor relay/bridge running on Debian Bookworm"
-LABEL version="1.0"
+# OCI Image Specification Labels
+# https://github.com/opencontainers/image-spec/blob/main/annotations.md
+LABEL org.opencontainers.image.title="tor-relay" \
+      org.opencontainers.image.description="Production Tor relay/bridge node running on Debian Bookworm" \
+      org.opencontainers.image.authors="Noah Nowak <nnowak@cryshell.com>" \
+      org.opencontainers.image.url="https://github.com/barrax63/tor-relay" \
+      org.opencontainers.image.source="https://github.com/barrax63/tor-relay" \
+      org.opencontainers.image.documentation="https://github.com/barrax63/tor-relay/blob/main/README.md" \
+      org.opencontainers.image.licenses="Apache-2.0" \
+      org.opencontainers.image.base.name="docker.io/library/debian:bookworm-slim"
 
-# Set environment variables to avoid interactive prompts
+# Prevent interactive prompts during build
 ENV DEBIAN_FRONTEND=noninteractive
 ENV TOR_USER=debian-tor
 
-# Step 1: Install required basic packages
-# Following the PDF installation guide
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
+# Install prerequisites for adding Tor repository
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        apt-transport-https \
         ca-certificates \
         curl \
         gnupg \
-        apt-transport-https \
-        lsb-release && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+        lsb-release \
+        curl \
+    && rm -rf /var/lib/apt/lists/*
 
-# Step 2: Store Tor signature key locally
-# Split into separate RUN command for better error isolation
+# Add official Tor Project signing key
 RUN mkdir -p /usr/share/keyrings && \
     curl -fsSL https://deb.torproject.org/torproject.org/A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89.asc | \
         gpg --dearmor -o /usr/share/keyrings/tor-archive-keyring.gpg
 
-# Step 3: Create repo file with signed-by method
-# Note: We skip the fingerprint verification in Docker build as it can be inconsistent
-# The signed-by method itself provides cryptographic verification
-RUN echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/tor-archive-keyring.gpg] https://deb.torproject.org/torproject.org $(lsb_release -sc) main" > \
-        /etc/apt/sources.list.d/tor.list
+# Configure official Tor Project repository
+RUN echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/tor-archive-keyring.gpg] \
+    https://deb.torproject.org/torproject.org $(lsb_release -sc) main" > \
+    /etc/apt/sources.list.d/tor.list
 
-# Step 4: Install Tor and keyring package
-# The deb.torproject.org-keyring package keeps keys up-to-date
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
+# Install Tor from official repository
+RUN apt-get update && apt-get install -y --no-install-recommends \
         tor \
-        deb.torproject.org-keyring && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+        deb.torproject.org-keyring \
+    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-# Create necessary directories with proper permissions
-# /var/lib/tor will be mounted as a volume for persistent data (keys, fingerprints)
-RUN mkdir -p /var/lib/tor && \
-    chown -R ${TOR_USER}:${TOR_USER} /var/lib/tor && \
+# Setup directories with proper permissions
+RUN mkdir -p /var/lib/tor /etc/tor && \
+    chown -R ${TOR_USER}:${TOR_USER} /var/lib/tor /etc/tor && \
     chmod 700 /var/lib/tor
 
-# Create directory for torrc configuration
-RUN mkdir -p /etc/tor && \
-    chown -R ${TOR_USER}:${TOR_USER} /etc/tor
+WORKDIR /var/lib/tor
 
-# Switch to non-root user for security
+# Health check - verify Tor control port or process
+HEALTHCHECK --interval=60s --timeout=10s --start-period=30s --retries=3 \
+    CMD curl -f http://127.0.0.1:9120/metrics || exit 1
+
+# Run as non-root user
 USER ${TOR_USER}
 
-# Expose common Tor ports (can be overridden in docker-compose.yml)
 # ORPort (relay traffic), DirPort (directory information)
 EXPOSE 9001 9030
 
-# Set working directory
-WORKDIR /var/lib/tor
-
-# Start Tor with the mounted configuration
-# -f specifies the config file location
 ENTRYPOINT ["tor"]
 CMD ["-f", "/etc/tor/torrc"]
