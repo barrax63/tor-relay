@@ -13,6 +13,7 @@ This Docker setup provides a production-ready Tor relay/bridge container based o
 - **Health Checks**: Automatic monitoring of Tor process
 - **Resource Limits**: Configurable CPU and memory constraints
 - **Helpful Error Messages**: Clear guidance when issues are detected
+- **SOCKS Proxy**: Local network SOCKS5 proxy for anonymous browsing
 
 ## Directory Structure
 
@@ -35,12 +36,13 @@ If using UFW:
 ```bash
 sudo ufw allow 9001/tcp  # ORPort
 sudo ufw allow 9030/tcp  # DirPort
+sudo ufw allow 9050/tcp  # SOCKS Port
 sudo ufw reload
 ```
 
 For other firewalls, ensure the ports specified in your `torrc` are open.
 
-### 1. Configure IPv6 interface
+### 2. Configure IPv6 interface
 
 Add the correct static IPv6 interface address (`<your IPv6 address>`) to the used interface (`<your interface>`).
 
@@ -52,29 +54,38 @@ ipv6ra_noprivacy
 static ip6_address=<your IPv6 address>
 ```
 
-### 2. Clone the repository
+### 3. Clone the repository
 
 ```bash
 git clone https://github.com/barrax63/tor-relay.git
 cd tor-relay
 ```
 
-### 3. Build and Start
+### 4. Build and Start
 
 ```bash
-# 3. Build the image
+# Build the image
 docker compose build
 
-# 2. Create configuration
+# Create configuration
 cp torrc.sample torrc
 nano torrc  # Edit with your settings (Nickname, ContactInfo, etc.)
 
-# 3. Start the container
+# Start the container
 docker compose up -d
 
-# 4. Monitor logs and automatic checks
+# Monitor logs and automatic checks
 docker compose logs -f tor
 ```
+
+## SOCKS Proxy Security Notes
+
+> ⚠️ **Important Security Considerations:**
+>
+> 1. **Network Exposure**: Only expose the SOCKS port to trusted networks. Never expose to the public internet.
+> 2. **Relay + Client Separation**: Running a SOCKS proxy on a relay can slightly reduce anonymity for proxy users due to traffic correlation. For maximum security, consider running a separate Tor instance for client access.
+> 3. **SocksPolicy**: Always configure restrictive `SocksPolicy` rules to limit access.
+> 4. **Host Firewall**: Use host-level firewall rules as an additional layer of protection.
 
 ## Monitoring
 
@@ -110,6 +121,15 @@ docker compose up -d
 
 The `deb.torproject.org-keyring` package ensures the GPG keys stay up-to-date automatically.
 
+## Ports Reference
+
+| Port | Protocol | Purpose | Default |
+|------|----------|---------|--------|
+| 9001 | TCP | Onion Routing (ORPort) | Enabled |
+| 9030 | TCP | Directory Port (DirPort) | Enabled |
+| 9050 | TCP | SOCKS5 Proxy | Disabled |
+| 9120 | TCP | Metrics (localhost only) | Enabled |
+
 ## Security Considerations
 
 1. **Dropped Capabilities**: All Linux capabilities are dropped for minimal privilege
@@ -120,6 +140,7 @@ The `deb.torproject.org-keyring` package ensures the GPG keys stay up-to-date au
 6. **Read-only Configuration**: torrc is mounted read-only to prevent tampering
 7. **Secure Permissions**: Data directory uses 700 permissions (owner-only access)
 8. **Automatic Validation**: Configuration is validated before Tor starts
+9. **SOCKS Policy**: When SOCKS is enabled, access is restricted via policy rules
 
 ## References
 
