@@ -2,8 +2,7 @@
 ## Basic Relay Settings
 ###############################################################################
 
-# Run Tor only as a relay server (no local SOCKS proxy)
-SocksPort 0
+# Run Tor without control socket
 ControlSocket 0
 
 # Data directory for storing relay keys and state
@@ -36,6 +35,33 @@ Nickname tor-relay
 # Contact information - allows Tor Project to contact you about issues
 # Format: [PGP Key] Name <email>
 ContactInfo tor-relay <tor@example.com>
+
+###############################################################################
+## SOCKS Proxy Configuration (Local Network Access)
+###############################################################################
+
+# Enable SOCKS5 proxy on port 9050
+# WARNING: Only expose to trusted networks!
+SocksPort 0.0.0.0:9050
+
+# SOCKS Policy - Control who can connect to the SOCKS proxy
+# Accept connections from localhost
+SocksPolicy accept 127.0.0.1
+# Accept connections from private network ranges
+SocksPolicy accept 192.168.0.0/16
+SocksPolicy accept 10.0.0.0/8
+SocksPolicy accept 172.16.0.0/12
+# Reject everything else
+SocksPolicy reject *
+
+# Isolate circuits by destination address and port
+# Each destination gets its own circuit for better privacy
+IsolateDestAddr 1
+IsolateDestPort 1
+
+# Limit SOCKS connections to prevent abuse
+# Maximum simultaneous connections per client IP
+MaxClientCircuitsPending 64
 
 ###############################################################################
 ## Bandwidth Configuration
