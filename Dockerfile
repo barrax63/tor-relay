@@ -61,8 +61,8 @@ HEALTHCHECK --interval=60s --timeout=10s --start-period=30s --retries=3 \
 # Run as non-root user
 USER ${TOR_USER}
 
-# ORPort (relay traffic), DirPort (directory information)
-EXPOSE 9001 9030
+# ORPort (relay traffic), DirPort (directory information), SOCKS port
+EXPOSE 9001 9030 9050
 
 ENTRYPOINT ["tor"]
 CMD ["-f", "/etc/tor/torrc"]
