@@ -93,6 +93,9 @@ MaxMemInQueues 1 GB
 # List all relay fingerprints you control (comma-separated)
 # MyFamily CD1D....
 
+# New family-key declaration
+FamilyId BtxO....
+
 ###############################################################################
 ## Exit Policy Configuration
 ###############################################################################
